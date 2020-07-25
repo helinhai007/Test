@@ -29,13 +29,13 @@ void setnonblocking(int sock)
     if(opts<0)  
     {  
         perror("fcntl(sock,GETFL)");  
-        exit(1);  
+        //exit(1);  
     }  
      opts = opts|O_NONBLOCK;  
     if(fcntl(sock,F_SETFL,opts)<0)  
     {  
         perror("fcntl(sock,SETFL,opts)");  
-        exit(1);  
+        //exit(1);  
     }  
 }  
   
@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 	bzero(&serveraddr, sizeof(serveraddr)); /*配置Server socket的相关信息 */
     serveraddr.sin_family = AF_INET;  
     inet_aton("127.0.0.1",&(serveraddr.sin_addr));//htons(portnumber);  
-    serveraddr.sin_port=htons(8080);  
+    serveraddr.sin_port=htons(5000);  
     bind(listenfd,(sockaddr *)&serveraddr, sizeof(serveraddr));  
       
     listen(listenfd, LISTENQ);
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
     {
          printf("File.\n");
          close(listenfd);
-         exit(1);
+         //exit(1);
     }	
       
     maxi = 0;  
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
                 if(connfd < 0)  
                 {  
                     perror("connfd < 0");  
-                    exit(1);  
+                    //exit(1);  
                 }  
                 //setnonblocking(connfd);  
                 char *str = inet_ntoa(clientaddr.sin_addr);  
