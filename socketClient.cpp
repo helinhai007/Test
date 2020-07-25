@@ -37,6 +37,7 @@ bool CClient::connect_to_server(const char *serveip,const int port)
   memset(&serveaddr,0,sizeof(serveaddr));
   serveaddr.sin_family=AF_INET;   //ipv4协议族
   serveaddr.sin_port=htons(port);
+   serveaddr.sin_addr.s_addr = inet_addr(serveip);
   if(connect(m_clientfd,(struct sockaddr *)&serveaddr,sizeof(serveaddr))!=0)
   {
     perror("connect");
@@ -65,9 +66,10 @@ int main( )
     printf("请键入消息回车键发送:");
     scanf("%s",buffer);
     if(client.Send(buffer,strlen(buffer))<=0)  break;
+
     memset(buffer,0,sizeof(buffer));
-    if(client.Recv(buffer,sizeof(buffer))<=0)  break;
-    printf("收到来信:%s\n",buffer);
+    // if(client.Recv(buffer,sizeof(buffer))<=0)  break;
+    // printf("收到来信:%s\n",buffer);
   }
 return 0;
 }

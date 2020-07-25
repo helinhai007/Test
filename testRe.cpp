@@ -13,6 +13,7 @@
 #include <stdio.h>  
 #include <errno.h>  
 #include <string.h>
+#include <cstdlib>
   
 using namespace std;  
   
@@ -89,17 +90,19 @@ int main(int argc, char* argv[])
     serveraddr.sin_family = AF_INET;  
     inet_aton("127.0.0.1",&(serveraddr.sin_addr));//htons(portnumber);  
     serveraddr.sin_port=htons(5000);  
-    bind(listenfd,(sockaddr *)&serveraddr, sizeof(serveraddr));  
-      
-    listen(listenfd, LISTENQ);
-	FILE*fp;
-	if((fp = fopen("123.txt","ab") ) == NULL )
+    if(bind(listenfd,(sockaddr *)&serveraddr, sizeof(serveraddr)) != 0)
     {
-         printf("File.\n");
-         close(listenfd);
-         //exit(1);
-    }	
+        cout << "bind failed" << endl;
+    }
+    cout << "bind successs" << endl;
       
+    if(listen(listenfd, LISTENQ) != 0)
+    {
+        cout << "listen failed" << endl;
+    }
+    cout << "listen successs" << endl;
+
+	FILE*fp; 
     maxi = 0;  
       
     for ( ; ; ) {  
@@ -107,6 +110,7 @@ int main(int argc, char* argv[])
         //等待epoll事件的发生  
         //返回需要处理的事件数目nfds，如返回0表示已超时。  
         nfds=epoll_wait(epfd,events,20,500);  
+        cout << "epoll_wait" << endl;
           
         //处理所发生的所有事件  
         for(i=0; i < nfds; ++i)  
@@ -114,11 +118,12 @@ int main(int argc, char* argv[])
             //如果新监测到一个SOCKET用户连接到了绑定的SOCKET端口，建立新的连接。  
             if(events[i].data.fd == listenfd)  
             {  
+                cout << "connect begin" << endl;
                 connfd = accept(listenfd,(sockaddr *)&clientaddr, &clilen);  
                 if(connfd < 0)  
                 {  
                     perror("connfd < 0");  
-                    //exit(1);  
+                    exit(1);  
                 }  
                 //setnonblocking(connfd);  
                 char *str = inet_ntoa(clientaddr.sin_addr);  
@@ -132,10 +137,13 @@ int main(int argc, char* argv[])
   
                 //注册ev  
                 epoll_ctl(epfd,EPOLL_CTL_ADD,connfd,&ev); /* 添加 */  
+                cout << "connect end" << endl;
             }  
+            
             //如果是已经连接的用户，并且收到数据，那么进行读入。  
             else if(events[i].events&EPOLLIN)  
             {  
+                cout << "receive begin" << endl;
                 cout << "EPOLLIN" << endl;  
                 if ( (sockfd = events[i].data.fd) < 0)  
                     continue;  
@@ -156,15 +164,22 @@ int main(int argc, char* argv[])
                     events[i].data.fd = -1;  
                 }  
                   
-                //szTemp = "";  
-                //szTemp += line;  
-                //szTemp = szTemp.substr(0,szTemp.find('\r')); /* remove the enter key */  
+                szTemp = "";  
+                szTemp += line;  
+                szTemp = szTemp.substr(0,szTemp.find('\r')); /* remove the enter key */  
 				
+                if((fp = fopen("123.txt","ab") ) == NULL )
+                {
+                    printf("File.\n");
+                    close(listenfd);
+                }
+                cout << "fopen successs" << endl;
 				fwrite(line, 1, n, fp);
+                fclose(fp);
+
 				memset(line,0,100); /* clear the buffer */
-				close(connfd);
-				fclose(fp);
-                //line[n] = '\0';  
+				//close(connfd);
+                //line[n] = '/0';  
                 cout << "Readin: " << szTemp << endl;  
                   
                 //设置用于写操作的文件描述符  
@@ -175,11 +190,13 @@ int main(int argc, char* argv[])
                   
                 //修改sockfd上要处理的事件为EPOLLOUT  
                 epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&ev); /* 修改 */  
+                cout << "receive end" << endl;
   
             }  
             else if(events[i].events&EPOLLOUT) // 如果有数据发送  
   
             {  
+                cout << "send begin" << endl;
                 sockfd = events[i].data.fd;  
                 szTemp = "Server:" + szTemp + "\n";  
                 send(sockfd, szTemp.c_str(), szTemp.size(), 0);  
@@ -193,10 +210,11 @@ int main(int argc, char* argv[])
                   
                 //修改sockfd上要处理的事件为EPOLIN  
                 epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&ev); /* 修改 */  
+                cout << "send end" << endl;
             }  
         } //(over)处理所发生的所有事件  
     } //(over)等待epoll事件的发生  
-      
+     close(listenfd); 
     close(epfd);  
     return 0;  
 } 
