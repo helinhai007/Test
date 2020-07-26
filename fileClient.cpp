@@ -29,7 +29,7 @@ int main(){
 
   cout << filename << endl;
 
-  FILE *fp = fopen(filename, "wb"); //以二进制方式打开（创建）文件
+  FILE *fp = fopen(filename, "rb"); //以二进制方式打开（创建）文件
 
   if(fp == NULL){
 
@@ -59,17 +59,33 @@ int main(){
   
   //循环接收数据，直到文件传输完毕
 
-  char buffer[BUF_SIZE] = {0}; //文件缓冲区
+  // char buffer[BUF_SIZE] = {0}; //文件缓冲区
 
-  int nCount;
+  // int nCount;
 
-  while( (nCount = recv(sock, buffer, BUF_SIZE, 0)) > 0 ){
+  // while( (nCount = recv(sock, buffer, BUF_SIZE, 0)) > 0 ){
 
-  fwrite(buffer, nCount, 1, fp);
+  // fwrite(buffer, nCount, 1, fp);
 
-  }
+  // }
 
-  cout << "recv sucess" << endl;
+  // cout << "recv sucess" << endl;
+    
+
+  char buffer[BUF_SIZE] = {0}; //缓冲区
+
+    int nCount;
+
+    while( (nCount = fread(buffer, 1, BUF_SIZE, fp)) > 0 ){
+
+    send(sock, buffer, nCount, 0);
+
+    }
+    cout << "send sucess" << endl;
+    
+    shutdown(sock, 1); //文件读取完毕，断开输出流，向客户端发送FIN包
+
+    recv(sock, buffer, BUF_SIZE, 0); //阻塞，等待客户端接收完毕
 
   
   //文件接收完毕后直接关闭套接字，无需调用shutdown()
