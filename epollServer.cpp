@@ -13,7 +13,8 @@
 #include <cstdlib>
 #include <string>
 #include <sys/epoll.h>
-#include <fcntl.h>  
+#include <fcntl.h>   
+#include <errno.h> 
 
 #define BUF_SIZE 1024
 
@@ -50,7 +51,7 @@ int main()
 
 
     //把socket设置为非阻塞方式  
-    //setnonblocking(listenfd);  
+    //setnonblocking(servSock);  
 
     //设置与要处理的事件相关的文件描述符
     ev.data.fd = servSock;
@@ -69,7 +70,7 @@ int main()
 
     sockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    sockAddr.sin_port = htons(1234);
+    sockAddr.sin_port = htons(65530);
 
     if (bind(servSock, (const struct sockaddr *)&sockAddr, sizeof(sockAddr)) != 0)
     {
@@ -161,27 +162,29 @@ int main()
             else if (events[i].events & EPOLLIN)
             {
                 cout << "receive begin" << endl;
-                cout << "EPOLLIN" << endl;
                 if ((sockfd = events[i].data.fd) < 0)
                     continue;
                 //循环接收数据，直到文件传输完毕
                 char buffer[BUF_SIZE] = {0}; //文件缓冲区
-                int nCount;
+                int nCount;// = recv(sockfd, buffer, sizeof(buffer), 0);
                 if ((nCount = recv(sockfd, buffer, sizeof(buffer), 0)) < 0)
+                //if(nCount < 0)
                 {
                     // Connection Reset:你连接的那一端已经断开了，而你却还试着在对方已断开的socketfd上读写数据！
                     if (errno == ECONNRESET)
                     {
                         close(sockfd);
                         events[i].data.fd = -1;
+                        std::cout << "disconnect" << std::endl;
                     }
                     else
                         std::cout << "readline error" << std::endl;
                 }
-                else if (n == 0) //读入的数据为空
+                else if (nCount == 0) //读入的数据为空
                 {
                     close(sockfd);
                     events[i].data.fd = -1;
+                    std::cout << "readline null" << std::endl;
                 }
 
                 cout << nCount << endl;
@@ -201,7 +204,7 @@ int main()
                 cout << "fwrite: sucess" << endl;
                 fclose(fp);
 
-                close(connfd);
+                //close(connfd);
 
                 //设置用于写操作的文件描述符
                 ev.data.fd = sockfd;
