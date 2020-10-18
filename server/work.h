@@ -3,24 +3,24 @@
 
 
 
-
-
-
-
-
-
+#include <unistd.h>
+#include <sys/types.h>
+//#include <string.h>
+//#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
 #include <sys/stat.h> 
 #include <fcntl.h>   
-#include <netinet.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <socket.h>   
+#include <sys/socket.h>
 #include <errno.h> 
 #include <sys/epoll.h>
 #include <sys/mman.h>
 
 #define PORT 10000 //监听端口
 #define THREAD_NUM 8;  //线程池数量
-#define LSITEN_QUEUE_LEN 100 //listen队列长度
+#define LISTEN_QUEUE_LEN 100 //listen队列长度
 #define EPOOL_SIZE 50 //epoll最大监听fd数量
 #define INT_SIZE 4 //int 长度
 #define FILENAME_MAXLEN 30 //文件名最大长度
@@ -50,7 +50,7 @@ struct fileinfo
 struct conn
 {
     int info_fd;        //信息通信句柄socketfd;接收文件信息，文件传送通知client
-    char filaname[FILENAME_MAXLEN];
+    char filename[FILENAME_MAXLEN];
     int  filesize;   //文件大小
     int  count;     //分块数量
     int bs;         //标准分块大小

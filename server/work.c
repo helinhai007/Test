@@ -32,7 +32,7 @@ int Service_init(int port)
 
     //端口复用
     int opt = 1;
-    int ret = setsockopt(listen_fd, SOL_SOCKET, SO_RESUMEADDR, &opt, sizeof(opt));
+    int ret = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     if(ret == -1)
     {
         perror("setsockopt error");
@@ -40,8 +40,8 @@ int Service_init(int port)
     }
 
     struct sockaddr_in server_addr;
-    socklen_t sockaddr_len = szieof(struct sockaddr_in);
-    bzero(&server_addr, sockaddr_len)
+    socklen_t sockaddr_len = sizeof(struct sockaddr_in);
+    bzero(&server_addr, sockaddr_len);
     server_addr.sin_family=AF_INET;   //ipv4协议族
     server_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     server_addr.sin_port=htons(port);
@@ -106,7 +106,7 @@ int createfile(char* filename, int size)
     close(fd);
 
     //返回
-    return 0；
+    return 0;
 }
 
 
@@ -131,7 +131,7 @@ void recv_fileinfo(int sockfd)
 
     //结构体内容打印检测
     printf("-------fileinfo------\n");
-    printf("filename = %s\n filesize = %s\n count = %d\n bs = %d\n", finfo.filename, finfo.filesize,file.count,file.bs);
+    printf("filename = %s\n filesize = %d\n count = %d\n bs = %d\n", finfo.filename, finfo.filesize,finfo.count,finfo.bs);
 
     printf("-------fileinfo------\n");
 
@@ -151,7 +151,7 @@ void recv_fileinfo(int sockfd)
     }
 
     //共享内存
-    char *map = (char*)mmap(NULL, finfo.filesize, PORT_WRITE| PORT_READ, MAP_SHARED, fd, 0);
+    char *map = (char*)mmap(NULL, finfo.filesize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
     close(fd);
 
     //向gconn[]中添加链接
@@ -159,14 +159,14 @@ void recv_fileinfo(int sockfd)
     printf("recv_fileinfo():Lock conn_lock,enter gconn[]\n");
 
     //查看使用标记，1、代表已经使用，0代表可用
-    while(gconn[feeid].used)
+    while(gconn[freeid].used)
     {
         freeid++;
         freeid = freeid% CONN_MAX;//类似循环队列处理，不处理freeid会大于最大值
     }
 
     //结构体赋值
-    gconn[freeid].info_id = sockfd;
+    gconn[freeid].info_fd = sockfd;
     //清空filename[FILENAME_MAXLEN]数据，并赋值
     bzero(&gconn[freeid].filename, FILENAME_MAXLEN);
     //文件信息
@@ -187,7 +187,7 @@ void recv_fileinfo(int sockfd)
 
      //向client发送分配的freeid(gconn[]数组下标)，作为确认，每个块都将携带id
      char freeid_buf[INT_SIZE] = {0};
-     memcpy(freeid_buf, &freeeid, INT_SIZE);
+     memcpy(freeid_buf, &freeid, INT_SIZE);
      send(sockfd, freeid_buf, INT_SIZE, 0);
      printf("freeid=%d\n", *((int*)freeid_buf));
 
@@ -323,7 +323,7 @@ void *worker(void *arg)
     case 0:
         {
             printf("##recv file_info: %d", type);
-            pw->recv_finfo(connfd);
+            pw->recv_info(connfd);
         }
         break;
         //接收文件快
