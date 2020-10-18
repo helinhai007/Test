@@ -5,8 +5,8 @@
 
 #include <unistd.h>
 #include <sys/types.h>
-//#include <string.h>
-//#include <stdlib.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/stat.h> 
@@ -19,7 +19,7 @@
 #include <sys/mman.h>
 
 #define PORT 10000 //监听端口
-#define THREAD_NUM 8;  //线程池数量
+#define THREAD_NUM 8  //线程池数量
 #define LISTEN_QUEUE_LEN 100 //listen队列长度
 #define EPOOL_SIZE 50 //epoll最大监听fd数量
 #define INT_SIZE 4 //int 长度
@@ -33,7 +33,7 @@
 struct args
 {
     int fd;
-    void (*recv_info)(int fd);
+    void (*recv_finfo)(int fd);
     void (*recv_data)(int fd);
 };
 

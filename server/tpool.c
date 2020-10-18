@@ -16,15 +16,15 @@ static void *thread_routine(void *arg)
     {
         pthread_mutex_lock(&tpool->queue_lock);
         //如果任务队列为空，且线程池关闭，线程阻塞等待任务
-        while(!tpool->queue_head && !tpool->shutdowm)
+        while(!tpool->queue_head && !tpool->shutdown)
         {
-             pthread_cond_wait(&tpool_queue_ready, &tpool->queue_lock);
+             pthread_cond_wait(&tpool->queue_ready, &tpool->queue_lock);
         }
 
         //查看线程池开关，如果线程池关闭，线程退出
-        if(tpool->shutdowm)
+        if(tpool->shutdown)
         {
-            pthread_mutex_ulock(&tpool->queue_lock);
+            pthread_mutex_unlock(&tpool->queue_lock);
             pthread_exit(NULL);
         }
 
@@ -34,7 +34,7 @@ static void *thread_routine(void *arg)
         tpool->queue_head = tpool->queue_head->next;
 
         //解锁
-        pthread_mutex_ulock(&tpool->queue_lock);
+        pthread_mutex_unlock(&tpool->queue_lock);
 
         work->routine(work->arg);
 
@@ -81,7 +81,7 @@ int tpool_create(int max_thr_num)
     }
 
     //创建work线程
-    tpool->thr_id = calloc(max_thr_num, sizeof(thread_t));
+    tpool->thr_id = calloc(max_thr_num, sizeof(pthread_t));
     if(!tpool->thr_id)
     {
         printf("calloc thr_id\n");
@@ -104,7 +104,7 @@ int tpool_create(int max_thr_num)
 //销毁线程池
 void tpool_destory()
 {
-    if(tpool->shutdowm)
+    if(tpool->shutdown)
     {
         return;
     }
@@ -115,7 +115,7 @@ void tpool_destory()
     //唤醒所有阻塞线程
     pthread_mutex_lock(&tpool->queue_lock);
     pthread_cond_broadcast(&tpool->queue_ready);
-    pthread_mutex_ulock(&tpool->queue_lock);
+    pthread_mutex_unlock(&tpool->queue_lock);
 
     //释放thredId数组
     free(tpool->thr_id);
@@ -131,8 +131,8 @@ void tpool_destory()
     }
 
     //销毁互斥量，条件变量
-    pthread_mutex_destory(&tpool->queue_lock);
-    pthread_cond_destory(&tpool->queue_ready);
+    pthread_mutex_destroy(&tpool->queue_lock);
+    pthread_cond_destroy(&tpool->queue_ready);
 
     //释放进程池结构体
     free(tpool);
@@ -142,7 +142,7 @@ void tpool_destory()
 int tpool_add_work(void *(*routine)(void *), void *arg)
 {
     //work指向等待加入任务链表的任务
-    tpool_work_t * work = NULL;
+    tpool_work_t *work = NULL;
 
     if(!routine)
     {
@@ -150,7 +150,7 @@ int tpool_add_work(void *(*routine)(void *), void *arg)
         return -1;
     }
 
-    work = (tpool_work_t*)malloc(sizeof(tpool_work_t));
+    work = (tpool_work_t *)malloc(sizeof(tpool_work_t));
     if(!work)
     {
         printf("%s:malloc failed\n", __FUNCTION__);
@@ -180,7 +180,7 @@ int tpool_add_work(void *(*routine)(void *), void *arg)
     //通知工作线程有新任务添加
     pthread_cond_signal(&tpool->queue_ready);
     //解锁
-    pthread_mutex_ulock(&tpool->queue_lock);
+    pthread_mutex_unlock(&tpool->queue_lock);
 
     return 0;
 }

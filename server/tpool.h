@@ -15,7 +15,7 @@ typedef struct tpool_work
 //线程池
 typedef struct tpool
 {
-    int shutdowm; //线程池是否销毁
+    int shutdown; //线程池是否销毁
     int max_thr_num;  //最大线程数
 
     pthread_t* thr_id; //线程id数组首地址
@@ -30,10 +30,10 @@ typedef struct tpool
 int tpool_create(int max_thr_num);
 
 //销毁线程池
-void tpool_destory()
+void tpool_destory();
 
 //向线程池中添加任务
-int tpool_add_work(void *(*routine)(void *), void *arg)
+int tpool_add_work(void *(*routine)(void *), void *arg);
 
 
 

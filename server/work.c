@@ -119,7 +119,7 @@ void recv_fileinfo(int sockfd)
 
 
     //结束条件：刚好把整个结构体读满
-    for(int n = 1; n < fileinfo_len; n++)
+    for(int n = 0; n < fileinfo_len; n++)
     {
         recv(sockfd, &fileinfo_buf[n], 1, 0);
     }
@@ -182,7 +182,7 @@ void recv_fileinfo(int sockfd)
      gconn[freeid].used = 1;
 
      //解锁
-     pthread_mutex_ulock(&conn_lock);
+     pthread_mutex_unlock(&conn_lock);
      printf("recv_fileinfo();\n");
 
      //向client发送分配的freeid(gconn[]数组下标)，作为确认，每个块都将携带id
@@ -280,7 +280,7 @@ void recv_filedata(int sockfd)
         bzero(&gconn[recv_id], conn_len);
     }
     //解锁
-    pthread_mutex_ulock(&conn_lock);
+    pthread_mutex_unlock(&conn_lock);
 
     //关闭句柄
     close(sockfd);
@@ -323,7 +323,7 @@ void *worker(void *arg)
     case 0:
         {
             printf("##recv file_info: %d", type);
-            pw->recv_info(connfd);
+            pw->recv_finfo(connfd);
         }
         break;
         //接收文件快
